@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المشرف - نظام كركوك الذكي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00f2fe;
+            --neon-purple: #9b51e0;
+            --neon-pink: #ff007f;
+            --dark-bg: #050511;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo', sans-serif; }
+        body { background: var(--dark-bg); color: white; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        .login-box { background:#0c101f; padding:40px; border-radius:24px; text-align:center; border:2px solid var(--neon-purple); max-width:400px; width:100%; }
+        .admin-btn-login { background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%); color: white; padding: 14px; border: none; border-radius: 50px; font-weight: 700; width: 100%; margin-top: 20px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transition: all 0.3s ease; }
+        .admin-btn-login:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba(0, 242, 254, 0.5); }
+
+        .admin-panel { display: none; width: 100%; max-width: 700px; background: #0c101f; border-radius: 32px; padding: 28px; border: 2px solid rgba(0, 242, 254, 0.2); }
+        h3 { text-align: center; margin-bottom: 20px; text-shadow: 0 0 15px var(--neon-cyan); }
+        
+        .admin-tabs-nav { display: flex; background: rgba(255,255,255,0.03); padding: 6px; border-radius: 18px; margin-bottom: 22px; gap: 8px; border: 1px solid rgba(255,255,255,0.07); }
+        .admin-tab-btn { flex: 1; padding: 12px; background: transparent; border: none; color: #64748b; font-weight: 700; cursor: pointer; border-radius: 14px; }
+        .admin-tab-btn.active { background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%); color: #050515; }
+
+        .admin-tab-content { display: none; }
+        .admin-tab-content.active { display: block; }
+
+        .admin-input-group { text-align: right; margin-bottom: 16px; }
+        .admin-input-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+        .admin-input-group input, .admin-input-group select { width: 100%; padding: 13px 16px; background: #141a2e; border: 1px solid #222c4a; border-radius: 14px; color: white; outline: none; text-align: right; }
+        
+        .admin-btn-add { width: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); color: #050515; border: none; padding: 15px; border-radius: 16px; font-weight: 700; cursor: pointer; }
+        .admin-list-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 18px; border-radius: 20px; margin-bottom: 14px; text-align: right; }
+        .item-meta-row { display: flex; justify-content: space-between; align-items: center; }
+        .admin-actions-row-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .action-control-btn { padding: 6px 14px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-control-delete { background: rgba(255, 0, 127, 0.2); color: var(--neon-pink); }
+        .btn-control-ban { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .btn-control-unban { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        
+        .admin-analytics-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; text-align: center; }
+        .analytics-card { background: rgba(255,255,255,0.02); padding: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body>
+
+    <!-- واجهة تسجيل دخول الأدمن المحدثة -->
+    <div class="login-box" id="adminLoginPage">
+        <h2>لوحة المشرف السرية 🔒</h2>
+        <p style="font-size:12px; color:#64748b; margin-top:5px; margin-bottom: 15px;">ادخل بيانات الإدارة المعتمدة للمنصة</p>
+        
+        <div class="admin-input-group">
+            <label>اسم المشرف</label>
+            <input type="text" id="adminUser" placeholder="ادخل اسم الأدمن">
+        </div>
+        <div class="admin-input-group">
+            <label>كلمة السر الإدارية</label>
+            <input type="password" id="adminPass" placeholder="••••••••">
+        </div>
+        
+        <button class="admin-btn-login" onclick="loginAdminCustom()">تسجيل الدخول للنظام ⚡</button>
+    </div>
+
+    <!-- لوحة التحكم الحقيقية الممنوعة على العوام -->
+    <div class="admin-panel" id="adminPanelPage">
+        <h3>النظام الذكي لإدارة المنصة 🛠️</h3>
+        
+        <div class="admin-tabs-nav">
+            <button class="admin-tab-btn active" onclick="switchTab('addTab', this)">إضافة سؤال</button>
+            <button class="admin-tab-btn" onclick="switchTab('questionsTab', this); loadQuestions();">الأسئلة</button>
+            <button class="admin-tab-btn" onclick="switchTab('playersTab', this); loadPlayers();">اللاعبين</button>
+        </div>
+
+        <!-- طاب الإضافة -->
+        <div class="admin-tab-content active" id="addTab">
+            <input type="hidden" id="editQuestionId" value="">
+            <div class="admin-input-group"><label>نص السؤال</label><input type="text" id="adminQuestionInput"></div>
+            <div class="admin-input-group"><label>الخيار 1</label><input type="text" id="adminOpt0"></div>
+            <div class="admin-input-group"><label>الخيار 2</label><input type="text" id="adminOpt1"></div>
+            <div class="admin-input-group"><label>الخيار 3</label><input type="text" id="adminOpt2"></div>
+            <div class="admin-input-group"><label>الخيار 4</label><input type="text" id="adminOpt3"></div>
+            <div class="admin-input-group">
+                <label>رقم الإجابة الصحيحة</label>
+                <select id="adminCorrectSelect"><option value="0">الخيار 1</option><option value="1">الخيار 2</option><option value="2">الخيار 3</option><option value="3">الخيار 4</option></select>
+            </div>
+            <div class="admin-input-group">
+                <label>الصعوبة</label>
+                <select id="adminDifficultySelect"><option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option></select>
+            </div>
+            <button class="admin-btn-add" id="adminSubmitBtn" onclick="saveQuestion()">حقن السؤال ف قاعدة البيانات 🚀</button>
+        </div>
+
+        <!-- طاب الأسئلة -->
+        <div class="admin-tab-content" id="questionsTab">
+            <div id="questionsContainer"></div>
+        </div>
+
+        <!-- طاب اللاعبين -->
+        <div class="admin-tab-content" id="playersTab">
+            <div class="admin-analytics-banner">
+                <div class="analytics-card">متصل: <span id="onlineCount" style="color:#10b981; font-weight:700;">0</span></div>
+                <div class="analytics-card">غير متصل: <span id="offlineCount" style="color:#ef4444; font-weight:700;">0</span></div>
+            </div>
+            <div id="playersContainer"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAUpBGEhi8lGl0y2YKRI2hgST2AgmxdSCQ",
+            authDomain: "aseila-cac39.firebaseapp.com",
+            projectId: "aseila-cac39",
+            storageBucket: "aseila-cac39.firebasestorage.app",
+            messagingSenderId: "514903380801",
+            appId: "1:514903380801:web:131ec2ab5ac87ade26c7c0",
+            measurementId: "G-XSC7M9HJZ7",
+            databaseURL: "https://aseila-cac39-default-rtdb.firebaseio.com"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ⚙️ حط معلومات الدخول السحرية ديالك كأدمن هنا ⚙️
+        const ADMIN_USERNAME = "admin"; 
+        const ADMIN_PASSWORD = "Dexter_Nacirox_2026"; // يمكنك تغيير الباسوورد هنا كما تحب
+
+        function loginAdminCustom() {
+            const u = document.getElementById('adminUser').value.trim();
+            const p = document.getElementById('adminPass').value;
+
+            if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+                sessionStorage.setItem('admin_authenticated', 'true');
+                document.getElementById('adminLoginPage').style.display = 'none';
+                document.getElementById('adminPanelPage').style.display = 'block';
+            } else {
+                alert("⚠️ خطأ صاعق: معلومات الدخول خاطئة!");
+            }
+        }
+
+        // التحقق من الجلسة المفتوحة عند إنعاش الصفحة
+        window.onload = function() {
+            if (sessionStorage.getItem('admin_authenticated') === 'true') {
+                document.getElementById('adminLoginPage').style.display = 'none';
+                document.getElementById('adminPanelPage').style.display = 'block';
+            }
+        };
+
+        function switchTab(id, btn) { document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.admin-tab-btn').forEach(t => t.classList.remove('active')); document.getElementById(id).classList.add('active'); btn.classList.add('active'); }
+
+        function saveQuestion() {
+            const id = document.getElementById('editQuestionId').value;
+            const data = { 
+                q: document.getElementById('adminQuestionInput').value, 
+                options: [
+                    document.getElementById('adminOpt0').value, 
+                    document.getElementById('adminOpt1').value, 
+                    document.getElementById('adminOpt2').value, 
+                    document.getElementById('adminOpt3').value
+                ], 
+                correct: parseInt(document.getElementById('adminCorrectSelect').value), 
+                difficulty: document.getElementById('adminDifficultySelect').value 
+            };
+            
+            if (id) {
+                database.ref('questions/' + id).update(data).then(() => resetForm());
+            } else {
+                database.ref('questions').push(data).then(() => resetForm());
+            }
+        }
+
+        function resetForm() { 
+            alert("تم حقن وحفظ السؤال بنجاح! 🎉"); 
+            document.getElementById('editQuestionId').value=''; 
+            document.getElementById('adminQuestionInput').value=''; 
+            document.getElementById('adminOpt0').value=''; 
+            document.getElementById('adminOpt1').value=''; 
+            document.getElementById('adminOpt2').value=''; 
+            document.getElementById('adminOpt3').value=''; 
+        }
+
+        function loadQuestions() {
+            const container = document.getElementById('questionsContainer'); container.innerHTML = 'تحميل...';
+            database.ref('questions').once('value', (snap) => {
+                container.innerHTML = ''; const data = snap.val(); if(!data) return;
+                Object.keys(data).forEach(key => {
+                    const div = document.createElement('div'); div.className = 'admin-list-item';
+                    div.innerHTML = `<div class="item-meta-row"><span>${data[key].q}</span></div>
+                    <div class="admin-actions-row-buttons"><button class="action-control-btn btn-control-delete" onclick="deleteQ('${key}')">حذف</button></div>`;
+                    container.appendChild(div);
+                });
+            });
+        }
+        function deleteQ(key) { if(confirm("حذف؟")) database.ref('questions/' + key).remove().then(() => loadQuestions()); }
+
+        function loadPlayers() {
+            const container = document.getElementById('playersContainer'); container.innerHTML = 'تحميل...';
+            database.ref('users').once('value', (snap) => {
+                container.innerHTML = ''; const data = snap.val(); if(!data) return;
+                let on = 0; let off = 0;
+                Object.keys(data).forEach(uid => {
+                    if(data[uid].online) on++; else off++;
+                    const div = document.createElement('div'); div.className = 'admin-list-item';
+                    div.innerHTML = `<div class="item-meta-row"><span>${data[uid].name} (${data[uid].online?'متصل':'منفصل'})</span></div>
+                    <div class="admin-actions-row-buttons">
+                        ${data[uid].banned ? `<button class="action-control-btn btn-control-unban" onclick="ban('${uid}', false)">إلغاء حظر</button>` : `<button class="action-control-btn btn-control-ban" onclick="ban('${uid}', true)">حظر حساب</button>`}
+                    </div>`;
+                    container.appendChild(div);
+                });
+                document.getElementById('onlineCount').innerText = on; document.getElementById('offlineCount').innerText = off;
+            });
+        }
+        function ban(uid, status) { database.ref('users/' + uid + '/banned').set(status).then(() => loadPlayers()); }
+    </script>
+</body>
+</html>
