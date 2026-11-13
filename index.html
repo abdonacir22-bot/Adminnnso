@@ -3,161 +3,646 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم المشرف - نظام كركوك الذكي</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>لوحة الإدارة المركزية | تحدي أساطير FF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-main: #090d16;
-            --bg-surface: #111827;
-            --bg-surface-elevated: #1f2937;
-            --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.15);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border-color: rgba(255, 255, 255, 0.05);
+            /* ألوان فاتحة ومريحة للعين */
+            --bg-body: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f8fafc;
+            --bg-hover: #f1f5f9;
+            --border-color: #e2e8f0;
+            
+            --text-main: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+
+            --success: #059669;
+            --success-light: #ecfdf5;
+            --success-border: #a7f3d0;
+
+            --warning: #d97706;
+            --warning-light: #fffbeb;
+            --warning-border: #fde68a;
+
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --danger-border: #fecaca;
+
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+
             --radius-lg: 16px;
             --radius-md: 12px;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-sm: 8px;
+            --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+            --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+            --transition: all 0.2s ease;
         }
 
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo', sans-serif; }
-        body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        /* ==================== إشعارات عائمة (Toast) ==================== */
+        .toast-container { position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast-item { background: var(--bg-surface); border: 1px solid var(--border-color); border-right: 4px solid var(--primary); color: var(--text-main); padding: 12px 18px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 10px; animation: slideIn 0.25s ease forwards; min-width: 260px; pointer-events: auto; }
+        .toast-item.success { border-right-color: var(--success); }
+        .toast-item.danger { border-right-color: var(--danger); }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ==================== واجهة تسجيل الدخول ==================== */
+        .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%); }
+        .login-card { background: var(--bg-surface); border: 1px solid var(--border-color); width: 100%; max-width: 420px; border-radius: var(--radius-lg); padding: 40px 32px; box-shadow: var(--shadow-md); text-align: center; }
+        .login-logo-badge { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-light); border: 1px solid var(--primary-border); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px auto; }
+        .login-card h2 { font-size: 22px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+        .login-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+
+        /* ==================== الهيكل الرئيسي للوحة التحكم ==================== */
+        .admin-app { display: none; min-height: 100vh; flex-direction: column; }
+        .admin-app.active { display: flex; }
+
+        /* الشريط العلوي */
+        .top-navbar { background: var(--bg-surface); border-bottom: 1px solid var(--border-color); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 900; box-shadow: var(--shadow-sm); flex-wrap: wrap; gap: 12px; }
+        .brand-box { display: flex; align-items: center; gap: 12px; }
+        .brand-logo { width: 40px; height: 40px; border-radius: 10px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; }
+        .brand-title { font-size: 17px; font-weight: 800; color: var(--text-main); }
+        .brand-sub { font-size: 11px; color: var(--text-muted); font-weight: 600; display: block; }
+
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .server-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 30px; background: var(--success-light); border: 1px solid var(--success-border); color: var(--success); font-size: 12px; font-weight: 700; }
+        .server-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+        .btn-logout { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); padding: 7px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .btn-logout:hover { background: var(--danger); color: white; }
+
+        /* الحاوية الوسطى */
+        .main-container { max-width: 1200px; width: 100%; margin: 28px auto; padding: 0 20px; flex: 1; }
+
+        /* ==================== الخانات الـ 3 الرئيسية فالواجهة ==================== */
+        .main-pillars-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .pillar-btn { background: var(--bg-surface); border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: space-between; text-align: right; box-shadow: var(--shadow-sm); }
+        .pillar-btn:hover { border-color: var(--primary-border); transform: translateY(-2px); }
+        .pillar-btn.active { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.12); }
         
-        /* شاشة تسجيل الدخول */
-        .login-box { background: var(--bg-surface); padding: 40px 30px; border-radius: var(--radius-lg); text-align: center; border: 1px solid var(--border-color); max-width: 420px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .login-box h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
-        .admin-btn-login { background: var(--primary); color: white; padding: 14px; border: none; border-radius: var(--radius-md); font-weight: 600; font-size: 16px; width: 100%; margin-top: 10px; cursor: pointer; transition: var(--transition); }
-        .admin-btn-login:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .pillar-info { display: flex; align-items: center; gap: 14px; }
+        .pillar-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--bg-subtle); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .pillar-btn.active .pillar-icon { background: var(--primary); color: white; border-color: var(--primary); }
+        .pillar-title { font-size: 16px; font-weight: 800; color: var(--text-main); display: block; }
+        .pillar-desc { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .pillar-count { background: var(--bg-subtle); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 800; }
+        .pillar-btn.active .pillar-count { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* اللوحة الرئيسية */
-        .admin-panel { display: none; width: 100%; max-width: 800px; background: var(--bg-surface); border-radius: var(--radius-lg); padding: 32px; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
-        .panel-header h3 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+        /* ==================== شريط الفروع الداخلية (Sub-branches) ==================== */
+        .main-section { display: none; }
+        .main-section.active { display: block; animation: fadeIn 0.2s ease; }
+
+        .sub-branches-nav { display: flex; gap: 10px; background: var(--bg-surface); padding: 8px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 24px; box-shadow: var(--shadow-sm); flex-wrap: wrap; }
+        .sub-branch-btn { flex: 1; min-width: 200px; padding: 12px 18px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .sub-branch-btn:hover { color: var(--text-main); background: var(--bg-subtle); }
+        .sub-branch-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+
+        .branch-pane { display: none; }
+        .branch-pane.active { display: block; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ==================== البطاقات والإحصائيات ==================== */
+        .stats-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stats-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
         
-        /* نظام التبويب الحديث */
-        .admin-tabs-nav { display: flex; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: var(--radius-md); margin-bottom: 28px; gap: 4px; border: 1px solid var(--border-color); }
-        .admin-tab-btn { flex: 1; padding: 10px 14px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px; transition: var(--transition); }
-        .admin-tab-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.02); }
-        .admin-tab-btn.active { background: var(--bg-surface-elevated); color: var(--text-main); border: 1px solid var(--border-color); }
+        .stat-card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-sm); }
+        .stat-card-info { display: flex; flex-direction: column; gap: 4px; }
+        .stat-card-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+        .stat-card-value { font-size: 28px; font-weight: 800; color: var(--text-main); }
+        .stat-card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
 
-        .admin-tab-content { display: none; }
-        .admin-tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .card-box { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+        .card-box-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 12px; }
+        .card-box-title { font-size: 16px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
 
-        /* الحقول والاستمارات */
+        /* ==================== الجداول الاحترافية (Tables) ==================== */
+        .table-responsive { width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+        .clean-table { width: 100%; border-collapse: collapse; text-align: right; background: var(--bg-surface); min-width: 650px; }
+        .clean-table th { background: var(--bg-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 800; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
+        .clean-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 14px; color: var(--text-main); vertical-align: middle; }
+        .clean-table tr:last-child td { border-bottom: none; }
+        .clean-table tr:hover td { background: var(--bg-subtle); }
+
+        .player-cell { display: flex; align-items: center; gap: 12px; }
+        .avatar-circle { width: 38px; height: 38px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; background-size: cover; background-position: center; border: 2px solid var(--border-color); flex-shrink: 0; }
+
+        /* ==================== الحقول والأزرار ==================== */
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
-        @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
-        .admin-input-group { text-align: right; display: flex; flex-direction: column; gap: 6px; }
-        .admin-input-group.full-width { grid-column: 1 / -1; }
-        .admin-input-group label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .admin-input-group input, .admin-input-group select { width: 100%; padding: 12px 14px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: white; outline: none; transition: var(--transition); font-size: 14px; text-align: right; }
-        .admin-input-group input:focus, .admin-input-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
-        
-        .admin-btn-add { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: var(--radius-md); font-weight: 600; font-size: 15px; cursor: pointer; transition: var(--transition); margin-top: 10px; }
-        .admin-btn-add:hover { background: #2563eb; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; text-align: right; }
+        .input-group.full-width { grid-column: 1 / -1; }
+        .input-group label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+        .input-group input, .input-group select { width: 100%; padding: 11px 14px; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 14px; outline: none; transition: var(--transition); }
+        .input-group input:focus, .input-group select:focus { border-color: var(--primary); background: var(--bg-surface); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
 
-        /* القوائم والعناصر */
-        .list-container { display: flex; flex-direction: column; gap: 12px; }
-        .admin-list-item { background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); padding: 16px 20px; border-radius: var(--radius-md); text-align: right; transition: var(--transition); }
-        .admin-list-item:hover { background: rgba(255, 255, 255, 0.02); border-color: rgba(255,255,255,0.1); }
-        .item-meta-row { display: flex; justify-content: space-between; align-items: center; }
-        .item-title { font-weight: 600; font-size: 15px; color: var(--text-main); }
-        
-        /* أزرار التحكم الفاخرة */
-        .admin-actions-row-buttons { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
-        .action-control-btn { padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
-        
-        /* تعديل الألوان حسب طلبك */
-        .btn-control-ban { background: var(--danger); color: white; }
-        .btn-control-ban:hover { background: #dc2626; }
-        .btn-control-unban { background: var(--success); color: white; }
-        .btn-control-unban:hover { background: #059669; }
-        .btn-control-delete { background: var(--warning); color: #050511; }
-        .btn-control-delete:hover { background: #d97706; }
-        
-        /* بطاقات الإحصائيات */
-        .admin-analytics-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-        .analytics-card { background: rgba(0, 0, 0, 0.15); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; text-align: center; }
-        .analytics-card span:first-child { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-        .analytics-card span:last-child { font-size: 22px; font-weight: 700; }
+        .toolbar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; background: var(--bg-subtle); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+        .toolbar input { flex: 2; min-width: 220px; padding: 10px 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); outline: none; font-size: 13px; }
+        .toolbar select { flex: 1; min-width: 160px; padding: 10px 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); outline: none; font-size: 13px; }
 
-        .btn-reset-scores { width: 100%; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-md); font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: 24px; transition: var(--transition); }
-        .btn-reset-scores:hover { border-color: var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.05); }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 22px; border-radius: var(--radius-sm); font-weight: 700; font-size: 14px; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--bg-subtle); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: var(--radius-sm); font-weight: 700; font-size: 14px; cursor: pointer; transition: var(--transition); }
+        .btn-secondary:hover { background: var(--border-color); }
+
+        .btn-sm { padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: var(--transition); border: 1px solid transparent; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-gift { background: var(--purple-light); color: var(--purple); border-color: var(--purple-border); }
+        .btn-gift:hover { background: var(--purple); color: white; }
+        .btn-edit { background: var(--primary-light); color: var(--primary); border-color: var(--primary-border); }
+        .btn-edit:hover { background: var(--primary); color: white; }
+        .btn-ban { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+        .btn-ban:hover { background: var(--danger); color: white; }
+        .btn-unban { background: var(--success-light); color: var(--success); border-color: var(--success-border); }
+        .btn-unban:hover { background: var(--success); color: white; }
+        .btn-delete { background: var(--warning-light); color: var(--warning); border-color: var(--warning-border); }
+        .btn-delete:hover { background: var(--warning); color: white; }
+
+        /* الشارات */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .badge-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+        .badge-warning { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border); }
+        .badge-danger { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
+        .badge-neutral { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border-color); }
+        .score-locked-badge { background: var(--bg-subtle); border: 1px solid var(--border-color); color: var(--text-main); padding: 5px 12px; border-radius: var(--radius-sm); font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+
+        /* ==================== بطاقات الأسئلة وشرائط التوزيع ==================== */
+        .category-bar-item { margin-bottom: 18px; }
+        .category-bar-top { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+        .progress-track { width: 100%; height: 12px; background: var(--bg-subtle); border-radius: 20px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.4s ease; }
+
+        .questions-list { display: flex; flex-direction: column; gap: 12px; }
+        .question-card-item { background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 20px; }
+        .question-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+        .question-title { font-size: 15px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .options-preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .opt-pill { background: var(--bg-surface); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: space-between; }
+        .opt-pill.correct { background: var(--success-light); border-color: var(--success-border); color: var(--success); font-weight: 800; }
+
+        /* ==================== قسم الشحن والأكواد ==================== */
+        .recharge-layout { display: grid; grid-template-columns: 350px 1fr; gap: 24px; align-items: start; }
+        .code-pill { font-family: monospace; font-size: 15px; font-weight: 800; letter-spacing: 1px; background: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: var(--radius-sm); border: 1px dashed var(--primary-border); }
+
+        @media (max-width: 960px) {
+            .main-pillars-grid { grid-template-columns: 1fr; }
+            .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .options-preview-grid { grid-template-columns: repeat(2, 1fr); }
+            .recharge-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .stats-grid-2, .stats-grid-4, .form-grid, .options-preview-grid { grid-template-columns: 1fr; }
+            .top-navbar { padding: 12px 16px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- واجهة تسجيل دخول الأدمن -->
-    <div class="login-box" id="adminLoginPage">
-        <h2>لوحة حساب الإدارة 🔒</h2>
-        <p style="font-size:13px; color:var(--text-muted); margin-top:4px; margin-bottom: 24px;">يرجى إدخال مفاتيح العبور الآمنة للنظام</p>
-        
-        <div class="admin-input-group" style="margin-bottom: 14px;">
-            <label>اسم المشرف</label>
-            <input type="text" id="adminUser" placeholder="اسم الحساب">
+    <!-- حاوية الإشعارات -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 1. واجهة تسجيل الدخول -->
+    <div class="login-wrapper" id="adminLoginPage">
+        <div class="login-card">
+            <div class="login-logo-badge">🛡️</div>
+            <h2>بوابة الإدارة المركزية</h2>
+            <p>نظام التحكم الشامل في لعبة تحدي أساطير FF</p>
+            
+            <div class="input-group" style="margin-bottom: 16px;">
+                <label>اسم المشرف</label>
+                <input type="text" id="adminUser" placeholder="أدخل اسم الحساب">
+            </div>
+            <div class="input-group" style="margin-bottom: 24px;">
+                <label>كلمة المرور الإدارية</label>
+                <input type="password" id="adminPass" placeholder="••••••••" onkeydown="if(event.key==='Enter') loginAdminCustom()">
+            </div>
+            
+            <button class="btn-primary" style="width: 100%; padding: 14px;" onclick="loginAdminCustom()">تسجيل الدخول ⚡</button>
         </div>
-        <div class="admin-input-group" style="margin-bottom: 20px;">
-            <label>كلمة السر الإدارية</label>
-            <input type="password" id="adminPass" placeholder="••••••••">
-        </div>
-        
-        <button class="admin-btn-login" onclick="loginAdminCustom()">تسجيل الدخول</button>
     </div>
 
-    <!-- لوحة التحكم الإدارية الكاملة -->
-    <div class="admin-panel" id="adminPanelPage">
-        <header class="panel-header">
-            <h3>منصة كركوك المركزية لإدارة النظام</h3>
-            <span style="font-size: 12px; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 20px; font-weight: 600;">متصل بالسيرفر 🟢</span>
-        </header>
+    <!-- 2. لوحة التحكم الرئيسية -->
+    <div class="admin-app" id="adminPanelPage">
         
-        <div class="admin-tabs-nav">
-            <button class="admin-tab-btn active" onclick="switchTab('addTab', this)">إضافة سؤال</button>
-            <button class="admin-tab-btn" onclick="switchTab('questionsTab', this); loadQuestions();">الأسئلة الحالية</button>
-            <button class="admin-tab-btn" onclick="switchTab('playersTab', this); loadPlayers();">اللاعبين والإحصائيات</button>
-        </div>
-
-        <!-- طاب الإضافة -->
-        <div class="admin-tab-content active" id="addTab">
-            <input type="hidden" id="editQuestionId" value="">
-            <div class="form-grid">
-                <div class="admin-input-group full-width"><label>نص السؤال</label><input type="text" id="adminQuestionInput" placeholder="اكتب نص السؤال هنا..."></div>
-                <div class="admin-input-group"><label>الخيار 1</label><input type="text" id="adminOpt0"></div>
-                <div class="admin-input-group"><label>الخيار 2</label><input type="text" id="adminOpt1"></div>
-                <div class="admin-input-group"><label>الخيار 3</label><input type="text" id="adminOpt2"></div>
-                <div class="admin-input-group"><label>الخيار 4</label><input type="text" id="adminOpt3"></div>
-                <div class="admin-input-group">
-                    <label>رقم الإجابة الصحيحة</label>
-                    <select id="adminCorrectSelect"><option value="0">الخيار 1</option><option value="1">الخيار 2</option><option value="2">الخيار 3</option><option value="3">الخيار 4</option></select>
-                </div>
-                <div class="admin-input-group">
-                    <label>مستوى الصعوبة</label>
-                    <select id="adminDifficultySelect"><option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option></select>
+        <!-- الشريط العلوي -->
+        <header class="top-navbar">
+            <div class="brand-box">
+                <div class="brand-logo">FF</div>
+                <div>
+                    <span class="brand-title">إدارة تحدي أساطير FF</span>
+                    <span class="brand-sub">لوحة التحكم السحابية الموحدة</span>
                 </div>
             </div>
-            <button class="admin-btn-add" id="adminSubmitBtn" onclick="saveQuestion()">تأكيد وحقن السؤال ف السيرفر 🚀</button>
-        </div>
+            <div class="header-actions">
+                <div class="server-badge">
+                    <span class="server-dot"></span>
+                    <span>متصل بالسيرفر</span>
+                </div>
+                <button class="btn-logout" onclick="logoutAdmin()">تسجيل الخروج</button>
+            </div>
+        </header>
 
-        <!-- طاب الأسئلة -->
-        <div class="admin-tab-content" id="questionsTab">
-            <div id="questionsContainer" class="list-container"></div>
-        </div>
+        <main class="main-container">
 
-        <!-- طاب اللاعبين والإحصائيات -->
-        <div class="admin-tab-content" id="playersTab">
-            <div class="admin-analytics-banner">
-                <div class="analytics-card"><span>إجمالي اللاعبين</span><span id="totalPlayersCount" style="color:var(--primary);">0</span></div>
-                <div class="analytics-card"><span>متصل الآن</span><span id="onlineCount" style="color:var(--success);">0</span></div>
-                <div class="analytics-card"><span>غير متصل</span><span id="offlineCount" style="color:var(--text-muted);">0</span></div>
+            <!-- الخانات الـ 3 الأساسية في الواجهة الرئيسية -->
+            <div class="main-pillars-grid">
+                <button class="pillar-btn active" id="pillarBtnPlayers" onclick="switchMainPillar('playersSection', this)">
+                    <div class="pillar-info">
+                        <div class="pillar-icon">👥</div>
+                        <div>
+                            <span class="pillar-title">1. خانة اللاعبين</span>
+                            <span class="pillar-desc">فرع جدول المتصلين + فرع الإحصائيات</span>
+                        </div>
+                    </div>
+                    <span class="pillar-count" id="pillarPlayersCount">0</span>
+                </button>
+
+                <button class="pillar-btn" id="pillarBtnQuestions" onclick="switchMainPillar('questionsSection', this)">
+                    <div class="pillar-info">
+                        <div class="pillar-icon">📚</div>
+                        <div>
+                            <span class="pillar-title">2. خانة الأسئلة</span>
+                            <span class="pillar-desc">فرع العدادات والفئات + فرع إدارة الأسئلة</span>
+                        </div>
+                    </div>
+                    <span class="pillar-count" id="pillarQuestionsCount">0</span>
+                </button>
+
+                <button class="pillar-btn" id="pillarBtnRecharge" onclick="switchMainPillar('rechargeSection', this)">
+                    <div class="pillar-info">
+                        <div class="pillar-icon">💳</div>
+                        <div>
+                            <span class="pillar-title">3. خانة الشحن</span>
+                            <span class="pillar-desc">توليد الأكواد وتتبع التفعيل</span>
+                        </div>
+                    </div>
+                    <span class="pillar-count" id="pillarCodesCount">0</span>
+                </button>
             </div>
 
-            <button class="btn-reset-scores" onclick="resetAllPlayersPoints()">🔄 تصفير نقاط كل اللاعبين وبدء أسبوع جديد</button>
-            
-            <div id="playersContainer" class="list-container"></div>
-        </div>
+            <!-- ========================================================================= -->
+            <!-- الخانة 1: قسم اللاعبين (متفرعة لفرعين) -->
+            <!-- ========================================================================= -->
+            <section class="main-section active" id="playersSection">
+                
+                <div class="sub-branches-nav">
+                    <button class="sub-branch-btn active" onclick="switchSubBranch('playersSection', 'playersBranch1', this)">
+                        <span>🟢 الفرع 1: عدد اللاعبين والمتصلين (جدول)</span>
+                    </button>
+                    <button class="sub-branch-btn" onclick="switchSubBranch('playersSection', 'playersBranch2', this)">
+                        <span>📊 الفرع 2: جميع باقي الإحصائيات وإدارة الحسابات</span>
+                    </button>
+                </div>
+
+                <!-- الفرع 1.1: عدد اللاعبين + المتصلين في جدول -->
+                <div class="branch-pane active" id="playersBranch1">
+                    <div class="stats-grid-2">
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">إجمالي اللاعبين المسجلين</span>
+                                <span class="stat-card-value" id="b1TotalPlayers">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--primary-light); color: var(--primary);">👥</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">اللاعبون المتصلون الآن (Online)</span>
+                                <span class="stat-card-value" id="b1OnlinePlayers" style="color: var(--success);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--success-light); color: var(--success);">🟢</div>
+                        </div>
+                    </div>
+
+                    <div class="card-box">
+                        <div class="card-box-header">
+                            <div class="card-box-title">📋 جدول اللاعبين وحالة الاتصال المباشر</div>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="b1TableFilter" onchange="renderPlayersData()" style="padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-subtle); font-weight: 700; font-size: 13px;">
+                                    <option value="all">عرض كل اللاعبين</option>
+                                    <option value="online">عرض المتصلين الآن فقط 🟢</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="clean-table">
+                                <thead>
+                                    <tr>
+                                        <th>الترتيب</th>
+                                        <th>اللاعب</th>
+                                        <th>حالة الاتصال</th>
+                                        <th>السكور (ثابت)</th>
+                                        <th>رصيد القلوب</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="b1PlayersTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الفرع 1.2: باقي الإحصائيات وإدارة اللاعبين (مع ثبات السكور) -->
+                <div class="branch-pane" id="playersBranch2">
+                    <div class="stats-grid-4">
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">غير متصل (Offline)</span>
+                                <span class="stat-card-value" id="b2OfflineCount">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--bg-subtle); color: var(--text-muted);">⚪</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">الحسابات المحظورة</span>
+                                <span class="stat-card-value" id="b2BannedCount" style="color: var(--danger);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--danger-light); color: var(--danger);">🚫</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">أعلى سكور مسجل</span>
+                                <span class="stat-card-value" id="b2TopScore" style="color: var(--primary);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--primary-light); color: var(--primary);">🏆</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">إجمالي القلوب باللعبة</span>
+                                <span class="stat-card-value" id="b2TotalHearts" style="color: var(--purple);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--purple-light); color: var(--purple);">❤️</div>
+                        </div>
+                    </div>
+
+                    <div class="card-box">
+                        <div class="card-box-header">
+                            <div class="card-box-title">⚙️ إدارة حسابات اللاعبين (السكور ثابت لكل لاعب 🔒)</div>
+                            <button class="btn-sm btn-ban" onclick="resetAllPlayersPoints()">🔄 تصفير موسمي شامل للجميع</button>
+                        </div>
+
+                        <div class="toolbar">
+                            <input type="text" id="searchPlayerInput" placeholder="🔍 ابحث باسم اللاعب أو الـ UID..." oninput="renderPlayersData()">
+                            <select id="filterPlayerStatus" onchange="renderPlayersData()">
+                                <option value="all">جميع الحسابات</option>
+                                <option value="online">المتصلون الآن 🟢</option>
+                                <option value="offline">غير المتصلين ⚪</option>
+                                <option value="banned">المحظورون فقط 🚫</option>
+                            </select>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="clean-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اللاعب والـ UID</th>
+                                        <th>الحالة</th>
+                                        <th>السكور (ثابت 🔒)</th>
+                                        <th>القلوب</th>
+                                        <th>إجراءات المشرف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="b2ManagementTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ========================================================================= -->
+            <!-- الخانة 2: قسم الأسئلة (متفرعة لفرعين - بدون JSON) -->
+            <!-- ========================================================================= -->
+            <section class="main-section" id="questionsSection">
+                
+                <div class="sub-branches-nav">
+                    <button class="sub-branch-btn active" id="qBranchBtn1" onclick="switchSubBranch('questionsSection', 'questionsBranch1', this)">
+                        <span>📊 الفرع 1: عداد الأسئلة وفئاتها</span>
+                    </button>
+                    <button class="sub-branch-btn" id="qBranchBtn2" onclick="switchSubBranch('questionsSection', 'questionsBranch2', this)">
+                        <span>✍️ الفرع 2: إدارة الأسئلة (إضافة، تعديل، وحذف)</span>
+                    </button>
+                </div>
+
+                <!-- الفرع 2.1: عداد الأسئلة وفئاتهم -->
+                <div class="branch-pane active" id="questionsBranch1">
+                    <div class="stats-grid-4">
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">إجمالي بنك الأسئلة</span>
+                                <span class="stat-card-value" id="qTotalCount">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--primary-light); color: var(--primary);">📚</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">فئة الأسئلة السهلة</span>
+                                <span class="stat-card-value" id="qEasyCount" style="color: var(--success);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--success-light); color: var(--success);">🟢</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">فئة الأسئلة المتوسطة</span>
+                                <span class="stat-card-value" id="qMedCount" style="color: var(--warning);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--warning-light); color: var(--warning);">🟡</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-info">
+                                <span class="stat-card-label">فئة الأسئلة الصعبة</span>
+                                <span class="stat-card-value" id="qHardCount" style="color: var(--danger);">0</span>
+                            </div>
+                            <div class="stat-card-icon" style="background: var(--danger-light); color: var(--danger);">🔴</div>
+                        </div>
+                    </div>
+
+                    <div class="card-box">
+                        <div class="card-box-header">
+                            <div class="card-box-title">📈 تفصيل وتوزيع فئات الأسئلة في السيرفر</div>
+                        </div>
+
+                        <div class="category-bar-item">
+                            <div class="category-bar-top">
+                                <span style="color: var(--success);">🟢 المستوى السهل (0 - 19 نقطة)</span>
+                                <span id="qEasyPct">0%</span>
+                            </div>
+                            <div class="progress-track"><div class="progress-fill" id="qEasyBar" style="background: var(--success);"></div></div>
+                        </div>
+
+                        <div class="category-bar-item">
+                            <div class="category-bar-top">
+                                <span style="color: var(--warning);">🟡 المستوى المتوسط (20 - 49 نقطة)</span>
+                                <span id="qMedPct">0%</span>
+                            </div>
+                            <div class="progress-track"><div class="progress-fill" id="qMedBar" style="background: var(--warning);"></div></div>
+                        </div>
+
+                        <div class="category-bar-item" style="margin-bottom: 0;">
+                            <div class="category-bar-top">
+                                <span style="color: var(--danger);">🔴 المستوى الصعب (+50 نقطة)</span>
+                                <span id="qHardPct">0%</span>
+                            </div>
+                            <div class="progress-track"><div class="progress-fill" id="qHardBar" style="background: var(--danger);"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الفرع 2.2: إضافة، تعديل، حذف، وعداد الأسئلة -->
+                <div class="branch-pane" id="questionsBranch2">
+                    
+                    <!-- استمارة الإضافة والتعديل -->
+                    <div class="card-box">
+                        <div class="card-box-header">
+                            <div class="card-box-title" id="formCardHeaderTitle">➕ إضافة سؤال جديد للسيرفر</div>
+                            <span class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">عداد الأسئلة الحالي: <strong id="qBranch2Counter">0</strong> سؤال</span>
+                        </div>
+
+                        <input type="hidden" id="editQuestionId" value="">
+                        <div class="form-grid">
+                            <div class="input-group full-width">
+                                <label>نص السؤال</label>
+                                <input type="text" id="adminQuestionInput" placeholder="اكتب نص السؤال هنا...">
+                            </div>
+                            <div class="input-group">
+                                <label>الخيار 1</label>
+                                <input type="text" id="adminOpt0" placeholder="الخيار الأول">
+                            </div>
+                            <div class="input-group">
+                                <label>الخيار 2</label>
+                                <input type="text" id="adminOpt1" placeholder="الخيار الثاني">
+                            </div>
+                            <div class="input-group">
+                                <label>الخيار 3</label>
+                                <input type="text" id="adminOpt2" placeholder="الخيار الثالث">
+                            </div>
+                            <div class="input-group">
+                                <label>الخيار 4</label>
+                                <input type="text" id="adminOpt3" placeholder="الخيار الرابع">
+                            </div>
+                            <div class="input-group">
+                                <label>رقم الإجابة الصحيحة</label>
+                                <select id="adminCorrectSelect">
+                                    <option value="0">الخيار 1</option>
+                                    <option value="1">الخيار 2</option>
+                                    <option value="2">الخيار 3</option>
+                                    <option value="3">الخيار 4</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>فئة الصعوبة</label>
+                                <select id="adminDifficultySelect">
+                                    <option value="easy">سهل</option>
+                                    <option value="medium">متوسط</option>
+                                    <option value="hard">صعب</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn-primary" style="flex: 2;" id="adminSubmitBtn" onclick="saveQuestion()">تأكيد وحقن السؤال ف السيرفر 🚀</button>
+                            <button class="btn-secondary" style="flex: 1; display: none;" id="adminCancelEditBtn" onclick="resetForm(false)">إلغاء التعديل</button>
+                        </div>
+                    </div>
+
+                    <!-- قائمة الأسئلة الحالية مع البحث والحذف والتعديل -->
+                    <div class="card-box">
+                        <div class="card-box-header">
+                            <div class="card-box-title">🗂️ قائمة الأسئلة الحالية (تعديل وحذف)</div>
+                        </div>
+
+                        <div class="toolbar">
+                            <input type="text" id="searchQuestionInput" placeholder="🔍 ابحث في نص الأسئلة..." oninput="renderQuestionsList()">
+                            <select id="filterDifficultySelect" onchange="renderQuestionsList()">
+                                <option value="all">جميع الفئات</option>
+                                <option value="easy">فئة السهل فقط</option>
+                                <option value="medium">فئة المتوسط فقط</option>
+                                <option value="hard">فئة الصعب فقط</option>
+                            </select>
+                        </div>
+
+                        <div id="questionsContainer" class="questions-list"></div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- ========================================================================= -->
+            <!-- الخانة 3: قسم الشحن (فرع واحد شامل) -->
+            <!-- ========================================================================= -->
+            <section class="main-section" id="rechargeSection">
+                
+                <div class="sub-branches-nav">
+                    <button class="sub-branch-btn active" style="cursor: default;">
+                        <span>💳 الفرع 1: توليد أكواد الشحن وتتبع التفعيل</span>
+                    </button>
+                </div>
+
+                <div class="recharge-layout">
+                    <!-- صندوق توليد الأكواد -->
+                    <div class="card-box" style="margin-bottom: 0;">
+                        <div class="card-box-header">
+                            <div class="card-box-title">⚡ توليد كود شحن جديد</div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="input-group">
+                                <label>حزمة القلوب</label>
+                                <select id="promoHeartsSelect" onchange="if(this.value==='custom') document.getElementById('customHeartsGroup').style.display='flex'; else document.getElementById('customHeartsGroup').style.display='none';">
+                                    <option value="80">حزمة 80 قلب ($1.99)</option>
+                                    <option value="240">حزمة 240 قلب ($4.99)</option>
+                                    <option value="630">حزمة 630 قلب ($9.99)</option>
+                                    <option value="custom">عدد قلوب مخصص...</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group" id="customHeartsGroup" style="display: none;">
+                                <label>أدخل عدد القلوب</label>
+                                <input type="number" id="customHeartsInput" placeholder="مثال: 150" value="150">
+                            </div>
+
+                            <div class="input-group">
+                                <label>صيغة الكود (اختياري)</label>
+                                <input type="text" id="customCodeNameInput" placeholder="اتركه فارغاً للتوليد التلقائي">
+                            </div>
+
+                            <button class="btn-primary" style="width: 100%;" onclick="generateNewPromoCode()">➕ توليد الكود ونسخه</button>
+                        </div>
+                    </div>
+
+                    <!-- جدول تتبع الأكواد -->
+                    <div class="card-box" style="margin-bottom: 0;">
+                        <div class="card-box-header">
+                            <div class="card-box-title">🎫 سجل تتبع الأكواد (<span id="codesTotalLabel">0</span>)</div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="clean-table" style="min-width: 500px;">
+                                <thead>
+                                    <tr>
+                                        <th>الكود</th>
+                                        <th>القلوب</th>
+                                        <th>الحالة</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="promoCodesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -175,11 +660,28 @@
             databaseURL: "https://aseila-cac39-default-rtdb.firebaseio.com"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
         const ADMIN_USERNAME = "admin"; 
         const ADMIN_PASSWORD = "Dexter_Nacirox_2026"; 
+
+        let cachedQuestions = {};
+        let cachedPlayers = {};
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast-item ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-20px)';
+                toast.style.transition = '0.25s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3200);
+        }
 
         function loginAdminCustom() {
             const u = document.getElementById('adminUser').value.trim();
@@ -187,137 +689,471 @@
 
             if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
                 sessionStorage.setItem('admin_authenticated', 'true');
-                document.getElementById('adminLoginPage').style.display = 'none';
-                document.getElementById('adminPanelPage').style.display = 'block';
+                initAdminDashboard();
+                showToast("مرحباً بك في لوحة الإدارة المركزية!");
             } else {
-                alert("⚠️ خطأ في معلومات الدخول!");
+                showToast("خطأ في اسم المشرف أو كلمة المرور!", "danger");
             }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('admin_authenticated');
+            location.reload();
+        }
+
+        function initAdminDashboard() {
+            document.getElementById('adminLoginPage').style.display = 'none';
+            document.getElementById('adminPanelPage').classList.add('active');
+            loadPlayers();
+            loadQuestions();
+            loadPromoCodes();
         }
 
         window.onload = function() {
             if (sessionStorage.getItem('admin_authenticated') === 'true') {
-                document.getElementById('adminLoginPage').style.display = 'none';
-                document.getElementById('adminPanelPage').style.display = 'block';
+                initAdminDashboard();
             }
         };
 
-        function switchTab(id, btn) { document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.admin-tab-btn').forEach(t => t.classList.remove('active')); document.getElementById(id).classList.add('active'); btn.classList.add('active'); }
+        // التنقل بين الخانات الـ 3 الرئيسية
+        function switchMainPillar(sectionId, btn) {
+            document.querySelectorAll('.main-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.pillar-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if (btn) btn.classList.add('active');
+        }
 
-        function saveQuestion() {
-            const id = document.getElementById('editQuestionId').value;
-            const data = { 
-                q: document.getElementById('adminQuestionInput').value, 
-                options: [
-                    document.getElementById('adminOpt0').value, 
-                    document.getElementById('adminOpt1').value, 
-                    document.getElementById('adminOpt2').value, 
-                    document.getElementById('adminOpt3').value
-                ], 
-                correct: parseInt(document.getElementById('adminCorrectSelect').value), 
-                difficulty: document.getElementById('adminDifficultySelect').value 
-            };
-            
-            if (id) {
-                database.ref('questions/' + id).update(data).then(() => resetForm());
+        // التنقل بين الفروع الداخلية لكل خانة
+        function switchSubBranch(parentSectionId, branchId, btn) {
+            const parent = document.getElementById(parentSectionId);
+            parent.querySelectorAll('.branch-pane').forEach(p => p.classList.remove('active'));
+            parent.querySelectorAll('.sub-branch-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(branchId).classList.add('active');
+            if (btn) btn.classList.add('active');
+        }
+
+        // ==================== الخانة 1: إدارة اللاعبين (فرع 1 + فرع 2) ====================
+        function loadPlayers() {
+            database.ref('users').on('value', (snap) => {
+                cachedPlayers = snap.val() || {};
+                renderPlayersData();
+            });
+        }
+
+        function renderPlayersData() {
+            const uids = Object.keys(cachedPlayers);
+            let on = 0, off = 0, bannedC = 0, topScore = 0, totalHearts = 0;
+            let playersArr = [];
+
+            uids.forEach(uid => {
+                const p = cachedPlayers[uid];
+                if (!p) return;
+                const pts = p.points !== undefined ? parseInt(p.points) : 0;
+                const hts = p.hearts !== undefined ? parseInt(p.hearts) : 5;
+                if (p.online === true) on++; else off++;
+                if (p.banned === true) bannedC++;
+                if (pts > topScore) topScore = pts;
+                totalHearts += hts;
+                playersArr.push({ uid, ...p, points: pts, hearts: hts });
+            });
+
+            // ترتيب تنازلي حسب السكور
+            playersArr.sort((a, b) => b.points - a.points);
+
+            // تحديث العدادات في الفرع 1 والفرع 2
+            document.getElementById('pillarPlayersCount').innerText = playersArr.length;
+            document.getElementById('b1TotalPlayers').innerText = playersArr.length;
+            document.getElementById('b1OnlinePlayers').innerText = on;
+
+            document.getElementById('b2OfflineCount').innerText = off;
+            document.getElementById('b2BannedCount').innerText = bannedC;
+            document.getElementById('b2TopScore').innerText = topScore;
+            document.getElementById('b2TotalHearts').innerText = totalHearts;
+
+            // --- بناء جدول الفرع 1 (عدد اللاعبين والمتصلين) ---
+            const b1Body = document.getElementById('b1PlayersTableBody');
+            b1Body.innerHTML = '';
+            const b1Filter = document.getElementById('b1TableFilter').value;
+            const b1List = playersArr.filter(p => b1Filter === 'all' || (b1Filter === 'online' && p.online === true));
+
+            if (b1List.length === 0) {
+                b1Body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:28px; color:var(--text-muted);">لا يوجد لاعبون في هذا العرض حالياً.</td></tr>';
             } else {
-                database.ref('questions').push(data).then(() => resetForm());
+                b1List.forEach((p, idx) => {
+                    const avatarHtml = p.avatar 
+                        ? `<div class="avatar-circle" style="background-image:url('${p.avatar}')"></div>`
+                        : `<div class="avatar-circle">${(p.name || 'ل').charAt(0)}</div>`;
+                    const statusBadge = p.online === true 
+                        ? '<span class="badge badge-success">● متصل الآن</span>' 
+                        : '<span class="badge badge-neutral">○ غير متصل</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#${idx + 1}</strong></td>
+                        <td>
+                            <div class="player-cell">
+                                ${avatarHtml}
+                                <strong>${p.name || 'بدون اسم'}</strong>
+                            </div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td><span class="score-locked-badge">⭐ ${p.points}</span></td>
+                        <td><strong style="color:#e11d48;">${p.hearts} ❤️</strong></td>
+                    `;
+                    b1Body.appendChild(tr);
+                });
+            }
+
+            // --- بناء جدول الفرع 2 (باقي الإحصائيات وإدارة الحسابات مع ثبات السكور) ---
+            const b2Body = document.getElementById('b2ManagementTableBody');
+            b2Body.innerHTML = '';
+            const searchTxt = (document.getElementById('searchPlayerInput').value || '').trim().toLowerCase();
+            const statusFilter = document.getElementById('filterPlayerStatus').value;
+
+            const b2List = playersArr.filter(p => {
+                const nameStr = (p.name || '').toLowerCase();
+                const uidStr = (p.uid || '').toLowerCase();
+                const matchSearch = !searchTxt || nameStr.includes(searchTxt) || uidStr.includes(searchTxt);
+                const matchStatus = statusFilter === 'all' 
+                    || (statusFilter === 'online' && p.online === true)
+                    || (statusFilter === 'offline' && !p.online)
+                    || (statusFilter === 'banned' && p.banned === true);
+                return matchSearch && matchStatus;
+            });
+
+            if (b2List.length === 0) {
+                b2Body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:28px; color:var(--text-muted);">لا توجد حسابات مطابقة للبحث.</td></tr>';
+            } else {
+                b2List.forEach((p, idx) => {
+                    const avatarHtml = p.avatar 
+                        ? `<div class="avatar-circle" style="background-image:url('${p.avatar}')"></div>`
+                        : `<div class="avatar-circle">${(p.name || 'ل').charAt(0)}</div>`;
+                    
+                    const statusBadge = p.online === true 
+                        ? '<span class="badge badge-success">● متصل</span>' 
+                        : '<span class="badge badge-neutral">○ غير متصل</span>';
+                    const banBadge = p.banned === true ? ' <span class="badge badge-danger">🚫 محظور</span>' : '';
+                    const safeName = (p.name || 'لاعب').replace(/'/g, "\\'");
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#${idx + 1}</strong></td>
+                        <td>
+                            <div class="player-cell">
+                                ${avatarHtml}
+                                <div>
+                                    <div style="font-weight:800;">${p.name || 'بدون اسم'}${banBadge}</div>
+                                    <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">${p.uid}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td><span class="score-locked-badge" title="السكور ثابت ولا يمكن تعديله يدوياً">🔒 ${p.points} ⭐</span></td>
+                        <td><strong style="color:#e11d48;">${p.hearts} ❤️</strong></td>
+                        <td>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button class="btn-sm btn-gift" onclick="giftHeartsToPlayer('${p.uid}', '${safeName}', ${p.hearts})">➕ قلوب</button>
+                                ${p.banned === true ? 
+                                    `<button class="btn-sm btn-unban" onclick="setBanStatus('${p.uid}', false)">✅ فك الحظر</button>` : 
+                                    `<button class="btn-sm btn-ban" onclick="setBanStatus('${p.uid}', true)">🚫 حظر</button>`
+                                }
+                                <button class="btn-sm btn-delete" onclick="deletePlayerCompletely('${p.uid}')">🗑️ حذف</button>
+                            </div>
+                        </td>
+                    `;
+                    b2Body.appendChild(tr);
+                });
             }
         }
 
-        function resetForm() { 
-            alert("تم حفظ السؤال ف قاعدة البيانات بنجاح! 🎉"); 
-            document.getElementById('editQuestionId').value=''; 
-            document.getElementById('adminQuestionInput').value=''; 
-            document.getElementById('adminOpt0').value=''; 
-            document.getElementById('adminOpt1').value=''; 
-            document.getElementById('adminOpt2').value=''; 
-            document.getElementById('adminOpt3').value=''; 
-        }
-
-        function loadQuestions() {
-            const container = document.getElementById('questionsContainer'); container.innerHTML = 'جاري التحميل...';
-            database.ref('questions').once('value', (snap) => {
-                container.innerHTML = ''; const data = snap.val(); if(!data) return;
-                Object.keys(data).forEach(key => {
-                    const div = document.createElement('div'); div.className = 'admin-list-item';
-                    div.innerHTML = `<div class="item-meta-row"><span class="item-title">${data[key].q}</span><button class="action-control-btn" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);" onclick="deleteQ('${key}')">حذف</button></div>`;
-                    container.appendChild(div);
-                });
-            });
-        }
-        function deleteQ(key) { if(confirm("هل تريد حذف هذا السؤال؟")) database.ref('questions/' + key).remove().then(() => loadQuestions()); }
-
-        function loadPlayers() {
-            const container = document.getElementById('playersContainer'); container.innerHTML = 'جاري مزامنة بيانات اللاعبين...';
-            database.ref('users').on('value', (snap) => {
-                container.innerHTML = ''; const data = snap.val(); if(!data) {
-                    document.getElementById('totalPlayersCount').innerText = 0;
-                    document.getElementById('onlineCount').innerText = 0;
-                    document.getElementById('offlineCount').innerText = 0;
-                    return;
-                }
-                let on = 0; let off = 0; let total = 0;
-                Object.keys(data).forEach(uid => {
-                    total++;
-                    if(data[uid].online === true) on++; else off++;
-                    
-                    const div = document.createElement('div'); div.className = 'admin-list-item';
-                    const playerPoints = data[uid].points !== undefined ? data[uid].points : 0;
-                    const statusText = data[uid].online === true ? '<span style="color:var(--success);">نشط 🟢</span>' : '<span style="color:var(--text-muted);">غير متصل ⚪</span>';
-                    const banBadge = data[uid].banned === true ? '<span style="color:var(--danger); font-weight:700;">[محظور]</span>' : '';
-
-                    div.innerHTML = `
-                        <div class="item-meta-row">
-                            <span class="item-title"><strong>${data[uid].name}</strong> ${banBadge}</span>
-                            <span>السكور: <strong style="color:var(--primary);">${playerPoints}</strong></span>
-                        </div>
-                        <div style="margin-top:6px; font-size:12px; color: var(--text-muted);">الحالة: ${statusText}</div>
-                        <div class="admin-actions-row-buttons">
-                            ${data[uid].banned === true ? 
-                                `<button class="action-control-btn btn-control-unban" onclick="setBanStatus('${uid}', false)">إلغاء الحظر</button>` : 
-                                `<button class="action-control-btn btn-control-ban" onclick="setBanStatus('${uid}', true)">حظر الحساب</button>`
-                            }
-                            <button class="action-control-btn btn-control-delete" onclick="deletePlayerCompletely('${uid}')">حذف الحساب</button>
-                        </div>`;
-                    container.appendChild(div);
-                });
-                document.getElementById('totalPlayersCount').innerText = total; 
-                document.getElementById('onlineCount').innerText = on; 
-                document.getElementById('offlineCount').innerText = off;
+        function giftHeartsToPlayer(uid, name, currentHearts) {
+            const input = prompt(`إضافة/خصم قلوب للاعب [${name}] (الرصيد الحالي: ${currentHearts} ❤️):\nأدخل الرقم بالموجب للإضافة أو بالسالب للخصم:`, "80");
+            if (input === null) return;
+            const addQty = parseInt(input);
+            if (isNaN(addQty)) { showToast("الرجاء إدخال رقم صحيح!", "danger"); return; }
+            const newTotal = Math.max(0, currentHearts + addQty);
+            database.ref('users/' + uid + '/hearts').set(newTotal).then(() => {
+                showToast(`تم تحديث رصيد قلوب [${name}] إلى ${newTotal} ❤️`);
             });
         }
 
         function setBanStatus(uid, status) { 
             const msg = status ? "هل تريد بالتأكيد حظر هذا الحساب؟" : "هل تريد إلغاء الحظر عن هذا اللاعب؟";
             if(confirm(msg)) {
-                database.ref('users/' + uid + '/banned').set(status); 
+                database.ref('users/' + uid + '/banned').set(status).then(() => {
+                    showToast(status ? "تم حظر اللاعب" : "تم رفع الحظر عن اللاعب بنجاح!");
+                }); 
             }
         }
 
         function deletePlayerCompletely(uid) {
             if(confirm("⚠️ تحذير نهائي: هل تريد حذف هذا الحساب تماماً من السيرفر؟")) {
                 database.ref('users/' + uid).remove().then(() => {
-                    alert("تم مسح الحساب بنجاح! 🗑️");
-                }).catch((error) => {
-                    alert("حدث خطأ: " + error.message);
+                    showToast("تم حذف الحساب نهائياً من السيرفر");
                 });
             }
         }
 
         function resetAllPlayersPoints() {
-            if(confirm("⚠️ هل أنت متأكد من تصفير نقاط جَميع اللاعبين؟")) {
+            if(confirm("⚠️ هل أنت متأكد من تصفير نقاط جَميع اللاعبين لبدء موسم جديد؟")) {
                 database.ref('users').once('value', (snap) => {
                     const players = snap.val();
-                    if(!players) { alert("لا يوجد لاعبين لتصفير نقاطهم!"); return; }
-                    
+                    if(!players) { showToast("لا يوجد لاعبون لتصفير نقاطهم!", "danger"); return; }
                     let updates = {};
-                    Object.keys(players).forEach(uid => {
-                        updates[`users/${uid}/points`] = 0;
-                    });
-                    
+                    Object.keys(players).forEach(uid => { updates[`users/${uid}/points`] = 0; });
                     database.ref().update(updates).then(() => {
-                        alert("تم تصفير النقاط بنجاح! 🔄");
+                        showToast("تم تصفير نقاط الموسم لجميع اللاعبين!");
                     });
+                });
+            }
+        }
+
+        // ==================== الخانة 2: قسم الأسئلة (فرع 1 + فرع 2 بدون JSON) ====================
+        function loadQuestions() {
+            database.ref('questions').on('value', (snap) => {
+                cachedQuestions = snap.val() || {};
+                renderQuestionsList();
+            });
+        }
+
+        function saveQuestion() {
+            const id = document.getElementById('editQuestionId').value;
+            const qText = document.getElementById('adminQuestionInput').value.trim();
+            const opt0 = document.getElementById('adminOpt0').value.trim();
+            const opt1 = document.getElementById('adminOpt1').value.trim();
+            const opt2 = document.getElementById('adminOpt2').value.trim();
+            const opt3 = document.getElementById('adminOpt3').value.trim();
+
+            if (!qText || !opt0 || !opt1 || !opt2 || !opt3) {
+                showToast("المرجو ملء نص السؤال وجميع الخيارات الأربعة!", "danger");
+                return;
+            }
+
+            const data = { 
+                q: qText, 
+                options: [opt0, opt1, opt2, opt3], 
+                correct: parseInt(document.getElementById('adminCorrectSelect').value), 
+                difficulty: document.getElementById('adminDifficultySelect').value 
+            };
+            
+            if (id) {
+                database.ref('questions/' + id).update(data).then(() => {
+                    showToast("تم حفظ التعديلات على السؤال بنجاح!");
+                    resetForm(false);
+                });
+            } else {
+                database.ref('questions').push(data).then(() => {
+                    showToast("تم حقن السؤال الجديد في السيرفر بنجاح!");
+                    resetForm(false);
+                });
+            }
+        }
+
+        function resetForm(showMsg = false) { 
+            if (showMsg) showToast("تم تفريغ الحقول"); 
+            document.getElementById('editQuestionId').value = ''; 
+            document.getElementById('adminQuestionInput').value = ''; 
+            document.getElementById('adminOpt0').value = ''; 
+            document.getElementById('adminOpt1').value = ''; 
+            document.getElementById('adminOpt2').value = ''; 
+            document.getElementById('adminOpt3').value = ''; 
+            document.getElementById('formCardHeaderTitle').innerText = "➕ إضافة سؤال جديد للسيرفر";
+            document.getElementById('adminSubmitBtn').innerText = "تأكيد وحقن السؤال ف السيرفر 🚀";
+            document.getElementById('adminCancelEditBtn').style.display = 'none';
+        }
+
+        function editQ(key) {
+            const qObj = cachedQuestions[key];
+            if (!qObj) return;
+            document.getElementById('editQuestionId').value = key;
+            document.getElementById('adminQuestionInput').value = qObj.q || '';
+            document.getElementById('adminOpt0').value = (qObj.options && qObj.options[0]) || '';
+            document.getElementById('adminOpt1').value = (qObj.options && qObj.options[1]) || '';
+            document.getElementById('adminOpt2').value = (qObj.options && qObj.options[2]) || '';
+            document.getElementById('adminOpt3').value = (qObj.options && qObj.options[3]) || '';
+            document.getElementById('adminCorrectSelect').value = qObj.correct !== undefined ? qObj.correct : 0;
+            document.getElementById('adminDifficultySelect').value = qObj.difficulty || 'easy';
+
+            document.getElementById('formCardHeaderTitle').innerText = "✏️ تعديل السؤال المحدد";
+            document.getElementById('adminSubmitBtn').innerText = "حفظ التعديلات على السؤال 💾";
+            document.getElementById('adminCancelEditBtn').style.display = 'inline-flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderQuestionsList() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+            const keys = Object.keys(cachedQuestions);
+            const total = keys.length;
+
+            let easyC = 0, medC = 0, hardC = 0;
+            keys.forEach(k => {
+                const d = cachedQuestions[k].difficulty || 'easy';
+                if (d === 'easy') easyC++;
+                else if (d === 'medium') medC++;
+                else if (d === 'hard') hardC++;
+            });
+
+            // تحديث العدادات في الواجهة والفرعين 1 و 2
+            document.getElementById('pillarQuestionsCount').innerText = total;
+            document.getElementById('qTotalCount').innerText = total;
+            document.getElementById('qBranch2Counter').innerText = total;
+            document.getElementById('qEasyCount').innerText = easyC;
+            document.getElementById('qMedCount').innerText = medC;
+            document.getElementById('qHardCount').innerText = hardC;
+
+            const easyPct = total > 0 ? Math.round((easyC / total) * 100) : 0;
+            const medPct = total > 0 ? Math.round((medC / total) * 100) : 0;
+            const hardPct = total > 0 ? Math.round((hardC / total) * 100) : 0;
+
+            document.getElementById('qEasyPct').innerText = `${easyC} سؤال (${easyPct}%)`;
+            document.getElementById('qMedPct').innerText = `${medC} سؤال (${medPct}%)`;
+            document.getElementById('qHardPct').innerText = `${hardC} سؤال (${hardPct}%)`;
+
+            document.getElementById('qEasyBar').style.width = `${easyPct}%`;
+            document.getElementById('qMedBar').style.width = `${medPct}%`;
+            document.getElementById('qHardBar').style.width = `${hardPct}%`;
+
+            // فلترة وعرض القائمة في الفرع 2
+            const searchTxt = (document.getElementById('searchQuestionInput').value || '').trim().toLowerCase();
+            const diffFilter = document.getElementById('filterDifficultySelect').value;
+
+            const filteredKeys = keys.slice().reverse().filter(key => {
+                const item = cachedQuestions[key];
+                if (!item || !item.q) return false;
+                const itemDiff = item.difficulty || 'easy';
+                const matchesDiff = diffFilter === 'all' || itemDiff === diffFilter;
+                const matchesSearch = !searchTxt || item.q.toLowerCase().includes(searchTxt);
+                return matchesDiff && matchesSearch;
+            });
+
+            if (filteredKeys.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:32px; color:var(--text-muted);">لا توجد أسئلة مطابقة للبحث.</div>';
+                return;
+            }
+
+            filteredKeys.forEach((key) => {
+                const qData = cachedQuestions[key];
+                const diff = qData.difficulty || 'easy';
+                const diffBadge = diff === 'easy' 
+                    ? '<span class="badge badge-success">سهل</span>' 
+                    : (diff === 'medium' ? '<span class="badge badge-warning">متوسط</span>' : '<span class="badge badge-danger">صعب</span>');
+
+                const optsHtml = (qData.options || []).map((opt, idx) => {
+                    const isCorr = idx === qData.correct;
+                    return `<div class="opt-pill ${isCorr ? 'correct' : ''}"><span>${idx + 1}. ${opt}</span><span>${isCorr ? '✓' : ''}</span></div>`;
+                }).join('');
+
+                const div = document.createElement('div');
+                div.className = 'question-card-item';
+                div.innerHTML = `
+                    <div class="question-card-top">
+                        <div class="question-title">
+                            ${diffBadge}
+                            <span>${qData.q}</span>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-sm btn-edit" onclick="editQ('${key}')">✏️ تعديل</button>
+                            <button class="btn-sm btn-ban" onclick="deleteQ('${key}')">🗑️ حذف</button>
+                        </div>
+                    </div>
+                    <div class="options-preview-grid">${optsHtml}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteQ(key) {
+            if (confirm("هل تريد حذف هذا السؤال نهائياً؟")) {
+                database.ref('questions/' + key).remove().then(() => showToast("تم حذف السؤال"));
+            }
+        }
+
+        // ==================== الخانة 3: قسم الشحن والأكواد ====================
+        function generateNewPromoCode() {
+            const selVal = document.getElementById('promoHeartsSelect').value;
+            const heartsQty = selVal === 'custom' 
+                ? parseInt(document.getElementById('customHeartsInput').value) 
+                : parseInt(selVal);
+
+            if (isNaN(heartsQty) || heartsQty <= 0) {
+                showToast("الرجاء تحديد عدد قلوب صحيح!", "danger");
+                return;
+            }
+
+            let customCode = document.getElementById('customCodeNameInput').value.trim().toUpperCase().replace(/\s+/g, '');
+            if (!customCode) {
+                const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                let randPart = "";
+                for (let i = 0; i < 6; i++) randPart += chars.charAt(Math.floor(Math.random() * chars.length));
+                customCode = `FF-${heartsQty}-${randPart}`;
+            }
+
+            const codeObj = {
+                hearts: heartsQty,
+                used: false,
+                createdAt: Date.now()
+            };
+
+            database.ref('promo_codes/' + customCode).set(codeObj).then(() => {
+                document.getElementById('customCodeNameInput').value = '';
+                navigator.clipboard.writeText(customCode).catch(() => {});
+                showToast(`تم إنشاء ونسخ الكود: ${customCode} (+${heartsQty} ❤️)`);
+            });
+        }
+
+        function loadPromoCodes() {
+            const tbody = document.getElementById('promoCodesTableBody');
+            database.ref('promo_codes').on('value', (snap) => {
+                tbody.innerHTML = '';
+                const data = snap.val();
+                if (!data) {
+                    document.getElementById('pillarCodesCount').innerText = 0;
+                    document.getElementById('codesTotalLabel').innerText = 0;
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:28px; color:var(--text-muted);">لا توجد أكواد شحن حالياً. قم بتوليد كود جديد!</td></tr>';
+                    return;
+                }
+
+                const codesList = Object.keys(data).map(code => ({ code, ...data[code] }));
+                codesList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                const availableCount = codesList.filter(c => !c.used).length;
+                document.getElementById('pillarCodesCount').innerText = availableCount;
+                document.getElementById('codesTotalLabel').innerText = codesList.length;
+
+                codesList.forEach(item => {
+                    const isUsed = item.used === true;
+                    const statusBadge = isUsed 
+                        ? `<span class="badge badge-danger">🔴 مستخدم (${item.usedBy || 'لاعب'})</span>` 
+                        : `<span class="badge badge-success">🟢 متاح للتفعيل</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="code-pill">${item.code}</span></td>
+                        <td><strong style="color:#e11d48;">+${item.hearts} ❤️</strong></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn-sm btn-edit" onclick="copyCodeText('${item.code}')">📋 نسخ</button>
+                                <button class="btn-sm btn-ban" onclick="deletePromoCode('${item.code}')">🗑️ حذف</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function copyCodeText(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`تم نسخ الكود: ${code}`);
+            });
+        }
+
+        function deletePromoCode(code) {
+            if (confirm(`هل تريد حذف الكود [${code}] نهائياً؟`)) {
+                database.ref('promo_codes/' + code).remove().then(() => {
+                    showToast(`تم حذف الكود ${code}`);
                 });
             }
         }
